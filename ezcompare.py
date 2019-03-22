@@ -1,92 +1,200 @@
-###### Henry M - 21/03/2019
+#Henry M - 21/03/2019
 
 import os
 import sys
 import glob
-import tkinter
-from tkinter import filedialog
+import threading
+import tkinter as tk
+from tkinter import filedialog, messagebox
 from pathlib import Path
 
+class ezcompare(tk.Tk):
 
-ENCODING_TYPE = 'utf-16 le' # encoding type of comparing text files
+	def __init__(self):
+		tk.Tk.__init__(self)
+		self.title("EzCompare")
+		self.geometry("650x300")
+		self.resizable(False, False)
+		self.iconbitmap('ezcompare_icon.ico')
+		self.initComponent()
 
-def ask_for_directory():
-	root = tkinter.Tk()
-	root.withdraw()
-	dirname = filedialog.askdirectory(parent=root, initialdir="/",title='Please select the directory')
+		# signal to break background thread's loop
+		self.do_stop = False
 
-	if dirname == "":
-		print('\nExiting program...')
-		sys.exit()
+		# override tkinter close button
+		self.protocol("WM_DELETE_WINDOW", lambda: self.on_exit())
 
-	dirname = Path(dirname) # convert path to corresponding OS' format
-	txt_files = glob.glob(os.path.join(dirname,'*.txt'))
-	while not txt_files: # if no txt file in the directory
-		print('Cannot find any txt file in this directory. Please try again...')
-		dirname = Path(filedialog.askdirectory(parent=root, initialdir="/", title='Please select the first directory'))
-		txt_files = glob.glob(os.path.join(dirname,'*.txt'))
+	# break all loop in background thread, prevent thread from running in background when application already closed
+	def on_exit(self): 
+		if messagebox.askyesno("Exit", "Do you want to quit the application?"):
+			self.do_stop = True
+			self.destroy()
+	
+	def initComponent(self):
+		#---------------------------
+		# Main frames
+		#---------------------------
+		self.topFrame = tk.Frame(self)
+		self.topFrame.pack(side=tk.TOP, pady=(20,5))
 
-	return dirname, txt_files
+		self.midFrame = tk.Frame(self)
+		self.midFrame.pack(pady=(20,5))
 
-print('\nWelcome to ezcompare!')
-input('\nPress ENTER to continue....')
+		self.bottomFrame = tk.Frame(self)
+		self.bottomFrame.pack(pady=(10,5))
 
-##################################################### Directory 1 ###########################################################
+		#---------------------------
+		# Directory 1
+		#---------------------------
+		self.dir1Label = tk.Label(self.topFrame, text = 'Directory 1: ', font = ('Verdana',11))
+		self.dir1Label.grid(row = 0, column = 0, padx = (0,1))
 
-print('\nSelecting first directory...')
-dirname1, txt_files_first = ask_for_directory()
-print('Directory 1: ' + str(dirname1))
+		self.dir1PathEntry = tk.Entry(self.topFrame, width = 40, font = ('Verdana',11))
+		self.dir1PathEntry.config(state='disable')
+		self.dir1PathEntry.grid(row = 0, column = 1, padx = (0,10), pady = (2,0))
 
-##################################################### Directory 2 ###########################################################
+		self.selectDirButton1 = tk.Button(self.topFrame, text = "...", width = 2, 
+														command = lambda: self.ask_for_directory(self.dir1PathEntry))
+		self.selectDirButton1.grid(row = 0, column = 2, padx = (0,20), pady=(0,1))
 
-print('\nSelecting second directory...')
-dirname2, txt_files_second = ask_for_directory()
-print('Directory 2: ' + str(dirname2))
+		#---------------------------
+		# Directory 2
+		#---------------------------
+		self.dir2Label = tk.Label(self.topFrame, text = 'Directory 2: ', font = ('Verdana',11))
+		self.dir2Label.grid(row = 1, column = 0, pady = (20,0))
 
-######################################################   Menu   #############################################################
+		self.dir2PathEntry = tk.Entry(self.topFrame, width = 40, font = ('Verdana',11))
+		self.dir2PathEntry.config(state='disable')
+		self.dir2PathEntry.grid(row = 1, column = 1, padx = (0,10), pady = (22,0))
 
-i = 1
-menu = 0
-menu = int(input('\nPlease choose an option.\n'
-				 'Output lines that text file(s) in:\n'
-				 '  1. First directory are misisng\n'
-				 '  2. Second directory are missing\n'
-				 '- Your choice... : '))
+		self.selectDirButton2 = tk.Button(self.topFrame, text = "...", width = 2, 
+														command = lambda: self.ask_for_directory(self.dir2PathEntry))
+		self.selectDirButton2.grid(row = 1, column = 2, padx = (0,20), pady = (20,1))
 
-##################################################### Comparison ############################################################
+		#---------------------------
+		# Radio option
+		#---------------------------
+		self.optionChoice = tk.IntVar()
+		self.optionChoice.set(1)
 
-for file1 in txt_files_first:
-	for file2 in txt_files_second:
-		with open(file1, encoding = ENCODING_TYPE) as f_a, open(file2, encoding = ENCODING_TYPE) as f_b:
-		    a_lines = set(f_a.read().splitlines())
-		    b_lines = set(f_b.read().splitlines())
-		subdirectory = 'comparison_result'
-		try:
-			os.mkdir(subdirectory) # create new subdirectory
-		except Exception:
-			pass # ignore if it is already existed
-		result = open(os.path.join(subdirectory, 'result' + str(i) + '.txt'), 'w', encoding = ENCODING_TYPE)
-		if menu == 1:
-			print('\nComparing pair ' + str(i) + '...')
-			result.write('Result of ' + file1 + ' compared to ' + file2 + '\n')
-			result.write('================================================================================\n\n')
-			for line in b_lines:
-				if line not in a_lines:
-					result.write(line + '\n')
-		elif menu == 2:
-			print('\nComparing pair ' + str(i) + '...')
-			result.write('Result of ' + file2 + ' compared to ' + file1 + '\n')
-			result.write('================================================================================\n\n')
-			for line in a_lines:
-				if line not in b_lines:
-					result.write(line + '\n')
+		self.optionLabel = tk.Label(self.midFrame, text = 'Output missing lines of text file(s) in:', font = ('Verdana',10))
+		self.optionLabel.grid(row = 0, column = 0)
+
+		self.option1 = tk.Radiobutton(self.midFrame, text = 'First directory', font = ('Verdana',10), variable = self.optionChoice, value = 1)
+		self.option1.grid(row = 0, column = 1, pady = (2,0))
+
+		self.option2 = tk.Radiobutton(self.midFrame, text = 'Second directory', font = ('Verdana',10), variable = self.optionChoice, value = 2)
+		self.option2.grid(row = 0, column = 2, pady = (2,0))
+
+		#---------------------------
+		# Encoding type option
+		#---------------------------	
+		types = ['', 'utf8', 'utf-16', 'utf-16 be', 'utf-16 le', 'utf-32', 'utf-32 be', 'utf-32 le']
+		self.encodingType = tk.StringVar()
+		self.encodingType.set(types[4])
+
+		self.encodingLabel = tk.Label(self.midFrame, text = 'Select encoding type:', font = ('Verdana',10))
+		self.encodingLabel.grid(row = 1, column = 0, padx = (100,0))
+
+		self.encodingOption = tk.OptionMenu(self.midFrame, self.encodingType, *types)
+		self.encodingOption.config(width = 8)
+		self.encodingOption.grid(row = 1, column = 1, padx = (0,30))
+
+		#---------------------------
+		# Warning/Result message
+		#---------------------------
+		self.messageText = tk.StringVar()
+		self.messageEntry = tk.Label(self.bottomFrame, textvariable = self.messageText , font = ('Verdana',10))
+		self.messageEntry.pack()
+		
+		#---------------------------
+		# Compare button
+		#---------------------------
+		self.compareButton = tk.Button(self.bottomFrame, height = 2, width = 10, text = "COMPARE", command = lambda: self.compare_button_click())
+		self.compareButton.pack(pady = (10,0))
+		
+	def ask_for_directory(self, entry: tk.Entry):
+		dirname = filedialog.askdirectory(parent = self, initialdir="/", title='Please select the directory')
+		entry.config(state = 'normal')
+		entry.delete(0, tk.END)
+		entry.insert(0, dirname)
+		entry.config(state = 'disable')
+
+	def check_directory(self, dirPathEntry: tk.Entry):
+		if dirPathEntry.get() == '':
+			self.messageEntry.config(fg = 'red')
+			self.messageText.set('Please choose desired directories...')
 		else:
-			print('Invalid choice.')
-			sys.exit()
-		result.close()
-		print('--------> Done.')
-		i+=1
+			# convert path to corresponding OS' format
+			dirname = Path(dirPathEntry.get()) 
+			txt_files = glob.glob(os.path.join(dirname,'*.txt'))
+			if not txt_files:
+				self.messageEntry.config(fg = 'red')
+				self.messageText.set('Cannot find any txt file in ' + dirPathEntry.get())
+			else:
+				return True, txt_files
 
-#############################################################################################################################
+	def compare_files(self):
+		success = True
 
-input('\nAll result has been saved in comparison_result folder (same directory with this tool).\nPres ENTER to exit...')
+		check1, txt_files_first = self.check_directory(self.dir1PathEntry)
+		check2, txt_files_second = self.check_directory(self.dir2PathEntry)
+
+		if check1 and check2:
+			i = 1
+			for file1 in txt_files_first:
+				if self.do_stop:
+					break
+				for file2 in txt_files_second:
+					if self.do_stop:
+						break
+					if self.encodingType.get() == '':
+						with open(file1) as f_a, open(file2) as f_b:
+							try:
+								a_lines = set(f_a.read().splitlines())
+								b_lines = set(f_b.read().splitlines())
+							except:
+								success = False
+								self.messageEntry.config(fg = 'red')
+								self.messageText.set('Incorrect encoding type.')
+					else:
+						with open(file1, encoding = self.encodingType.get()) as f_a, open(file2, encoding = self.encodingType.get()) as f_b:
+							try:
+							    a_lines = set(f_a.read().splitlines())
+							    b_lines = set(f_b.read().splitlines())
+							    subdirectory = 'comparison_result'
+							    try:
+							    	os.mkdir(subdirectory)
+							    except Exception:
+							    	pass
+							    result = open(os.path.join(subdirectory, 'result' + str(i) + '.txt'), 'w', encoding = self.encodingType.get())
+							    self.messageEntry.config(fg = 'green')
+							    self.messageText.set('Comparing pair ' + str(i) + '...')
+							    if self.optionChoice.get() == 1:
+							    	result.write('Result of ' + file1 + ' compared to ' + file2 + '\n')
+							    	result.write('================================================================================\n\n')
+							    	for line in b_lines:
+							    		if line not in a_lines:
+							    			result.write(line + '\n')
+							    else:
+							    	result.write('Result of ' + file2 + ' compared to ' + file1 + '\n')
+							    	result.write('================================================================================\n\n')
+							    	for line in a_lines:
+							    		if line not in b_lines:
+							    			result.write(line + '\n')
+							    result.close()
+							    f_a.close()
+							    f_b.close()
+							    i+=1
+							except:
+								success = False
+								self.messageText.set('Incorrect encoding type.')
+			if success:
+				self.messageText.set('Result has been saved in comparison_result folder (same directory with this tool).')
+
+	def compare_button_click(self):
+		self.compare_files_thread = threading.Thread(target = self.compare_files)
+		self.compare_files_thread.start()
+
+app = ezcompare()
+app.mainloop()
