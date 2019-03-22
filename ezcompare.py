@@ -53,8 +53,7 @@ class ezcompare(tk.Tk):
 		self.dir1PathEntry.config(state='disable')
 		self.dir1PathEntry.grid(row = 0, column = 1, padx = (0,10), pady = (2,0))
 
-		self.selectDirButton1 = tk.Button(self.topFrame, text = "...", width = 2, 
-														command = lambda: self.ask_for_directory(self.dir1PathEntry))
+		self.selectDirButton1 = tk.Button(self.topFrame, text = "...", width = 2, command = lambda: self.ask_for_directory(self.dir1PathEntry))
 		self.selectDirButton1.grid(row = 0, column = 2, padx = (0,20), pady=(0,1))
 
 		#---------------------------
@@ -67,8 +66,7 @@ class ezcompare(tk.Tk):
 		self.dir2PathEntry.config(state='disable')
 		self.dir2PathEntry.grid(row = 1, column = 1, padx = (0,10), pady = (22,0))
 
-		self.selectDirButton2 = tk.Button(self.topFrame, text = "...", width = 2, 
-														command = lambda: self.ask_for_directory(self.dir2PathEntry))
+		self.selectDirButton2 = tk.Button(self.topFrame, text = "...", width = 2, command = lambda: self.ask_for_directory(self.dir2PathEntry))
 		self.selectDirButton2.grid(row = 1, column = 2, padx = (0,20), pady = (20,1))
 
 		#---------------------------
