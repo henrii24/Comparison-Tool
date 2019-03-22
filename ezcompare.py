@@ -1,53 +1,50 @@
 ###### Henry M - 21/03/2019
 
 import os
+import sys
 import glob
 import tkinter
 from tkinter import filedialog
 from pathlib import Path
-import sys
+
 
 ENCODING_TYPE = 'utf-16 le' # encoding type of comparing text files
 
-print('\nThis tool will list out lines that txt file(s) in one directory are missing compared to txt file(s) in the other directory.')
+def ask_for_directory():
+	root = tkinter.Tk()
+	root.withdraw()
+	dirname = filedialog.askdirectory(parent=root, initialdir="/",title='Please select the directory')
+
+	if dirname == "":
+		print('\nExiting program...')
+		sys.exit()
+
+	dirname = Path(dirname) # convert path to corresponding OS' format
+	txt_files = glob.glob(os.path.join(dirname,'*.txt'))
+	while not txt_files: # if no txt file in the directory
+		print('Cannot find any txt file in this directory. Please try again...')
+		dirname = Path(filedialog.askdirectory(parent=root, initialdir="/", title='Please select the first directory'))
+		txt_files = glob.glob(os.path.join(dirname,'*.txt'))
+
+	return dirname, txt_files
+
+print('\nWelcome to ezcompare!')
 input('\nPress ENTER to continue....')
 
-root = tkinter.Tk()
-root.withdraw()
+##################################################### Directory 1 ###########################################################
 
-############################### Directory 1 ###############################
 print('\nSelecting first directory...')
-dirname1 = filedialog.askdirectory(parent=root, initialdir="/",title='Please select the FIRST directory')
-if dirname1 == "":
-	print('\nExiting program...')
-	sys.exit()
-
-dirname1 = Path(dirname1) # convert path to os' format
-txt_files_first = glob.glob(os.path.join(dirname1,'*.txt'))
-while not txt_files_first: # if no txt file in the directory
-	print('Cannot find any txt file in this directory. Please try again...')
-	dirname1 = Path(filedialog.askdirectory(parent=root, initialdir="/", title='Please select the FIRST directory'))
-	txt_files_first = glob.glob(os.path.join(dirname1,'*.txt'))
-
+dirname1, txt_files_first = ask_for_directory()
 print('Directory 1: ' + str(dirname1))
 
-############################### Directory 2 ###############################
+##################################################### Directory 2 ###########################################################
+
 print('\nSelecting second directory...')
-dirname2 = filedialog.askdirectory(parent=root, initialdir="/", title='Please select the SECOND directory')
-if dirname2 == "":
-	print('\nExiting program...')
-	sys.exit()
-
-dirname2 = Path(dirname2) # convert path to os' format
-txt_files_second = glob.glob(os.path.join(dirname2,'*.txt'))
-while not txt_files_first: # if no txt file in the directory
-	print('Cannot find any txt file in this directory. Please try again...')
-	dirname2 = Path(filedialog.askdirectory(parent=root, initialdir="/", title='Please select the FIRST directory'))
-	txt_files_second = glob.glob(os.path.join(dirname2,'*.txt'))
-
+dirname2, txt_files_second = ask_for_directory()
 print('Directory 2: ' + str(dirname2))
 
-############################### Comparison ###############################
+######################################################   Menu   #############################################################
+
 i = 1
 menu = 0
 menu = int(input('\nPlease choose an option.\n'
@@ -55,6 +52,8 @@ menu = int(input('\nPlease choose an option.\n'
 				 '  1. First directory are misisng\n'
 				 '  2. Second directory are missing\n'
 				 '- Your choice... : '))
+
+##################################################### Comparison ############################################################
 
 for file1 in txt_files_first:
 	for file2 in txt_files_second:
@@ -70,14 +69,14 @@ for file1 in txt_files_first:
 		if menu == 1:
 			print('\nComparing pair ' + str(i) + '...')
 			result.write('Result of ' + file1 + ' compared to ' + file2 + '\n')
-			result.write('=========================================================================================================\n\n')
+			result.write('================================================================================\n\n')
 			for line in b_lines:
 				if line not in a_lines:
 					result.write(line + '\n')
 		elif menu == 2:
 			print('\nComparing pair ' + str(i) + '...')
 			result.write('Result of ' + file2 + ' compared to ' + file1 + '\n')
-			result.write('=========================================================================================================\n\n')
+			result.write('================================================================================\n\n')
 			for line in a_lines:
 				if line not in b_lines:
 					result.write(line + '\n')
@@ -87,5 +86,7 @@ for file1 in txt_files_first:
 		result.close()
 		print('--------> Done.')
 		i+=1
-		
-input('\nAll comparison has been saved in comparison_result folder (same directory as this tool in).\nPres ENTER to exit...')
+
+#############################################################################################################################
+
+input('\nAll result has been saved in comparison_result folder (same directory with this tool).\nPres ENTER to exit...')
