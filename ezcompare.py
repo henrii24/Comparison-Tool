@@ -1,5 +1,6 @@
 #Henry M - 21/03/2019
 
+import base64
 import os
 import sys
 import glob
