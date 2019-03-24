@@ -5,9 +5,12 @@ import os
 import sys
 import glob
 import threading
+import re
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from pathlib import Path
+import time
+
 
 class ezcompare(tk.Tk):
 
@@ -134,6 +137,8 @@ class ezcompare(tk.Tk):
 				return True, txt_files
 
 	def compare_files(self):
+		startTime = time.time()
+
 		success = True
 		noEncode = False
 
@@ -155,8 +160,8 @@ class ezcompare(tk.Tk):
 						f_a = open(file1, encoding = self.encodingType.get())
 						f_b = open(file2, encoding = self.encodingType.get())
 						try:
-						    a_lines = list(f_a.read().splitlines())
-						    b_lines = list(f_b.read().splitlines())
+						    a_lines = set(f_a.read().splitlines())
+						    b_lines = set(f_b.read().splitlines())
 						    subdirectory = 'comparison_result'
 						    try:
 						    	os.mkdir(subdirectory)
@@ -172,18 +177,18 @@ class ezcompare(tk.Tk):
 						    	result.write('================================================================================\n\n')
 
 						    	for line in b_lines:
-						    		isMissing = True
+						    		try:
+						    			stringTest = ','.join(a_lines)
+						    			itemTag = line.split('"')
+						    			if len(itemTag) > 2:
+						    				if not re.search('\\b'+itemTag[1]+'\\b', stringTest, flags = re.IGNORECASE):
+						    					result.write(line + '\n')
+						    		except IndexError:
+						    			continue
 
-						    		for line1 in a_lines:
-						    			try:
-						    				if line.split('"')[1].lower() == line1.split('"')[1].lower():
-						    					isMissing = False
-						    			except:
-						    				continue
-
-						    		if isMissing:
-						    			print(line)
-						    			result.write(line + '\n')
+						    		#if isMissing:
+						    		#	print(line)
+						    		#	result.write(line + '\n')
 						    			
 						    else:
 						    	result.write('Result of ' + file2 + ' compared to ' + file1 + '\n')
@@ -208,13 +213,13 @@ class ezcompare(tk.Tk):
 						    f_b.close()
 						    i+=1
 						except Exception as e:
-							print(str(e))
 							success = False
 							self.messageEntry.config(fg = 'red')
 							self.messageText.set('Incorrect encoding type.')
 			if success:
 				self.messageEntry.config(fg = 'green')
 				self.messageText.set('Result has been saved in comparison_result folder (same directory with this tool).')
+				print('It took {0:0.1f} seconds'.format(time.time() - startTime))
 
 	def compare_button_click(self):
 		self.compare_files_thread = threading.Thread(target = self.compare_files)
