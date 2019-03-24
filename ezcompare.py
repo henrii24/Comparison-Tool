@@ -9,8 +9,6 @@ import re
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from pathlib import Path
-import time
-
 
 class ezcompare(tk.Tk):
 
@@ -35,7 +33,7 @@ class ezcompare(tk.Tk):
 			self.destroy()
 	
 	def initComponent(self):
-		#---------------------------d
+		#---------------------------
 		# Main frames
 		#---------------------------
 		self.topFrame = tk.Frame(self)
@@ -137,10 +135,8 @@ class ezcompare(tk.Tk):
 				return True, txt_files
 
 	def compare_files(self):
-		startTime = time.time()
 
 		success = True
-		noEncode = False
 
 		check1, txt_files_first = self.check_directory(self.dir1PathEntry)
 		check2, txt_files_second = self.check_directory(self.dir2PathEntry)
@@ -167,59 +163,32 @@ class ezcompare(tk.Tk):
 						    	os.mkdir(subdirectory)
 						    except Exception:
 						    	pass
-
 						    result = open(os.path.join(subdirectory, 'result' + str(i) + '.txt'), 'w', encoding = self.encodingType.get())
 						    self.messageEntry.config(fg = 'green')
 						    self.messageText.set('Comparing pair ' + str(i) + '...')
-
 						    if self.optionChoice.get() == 1:
 						    	result.write('Result of ' + file1 + ' compared to ' + file2 + '\n')
 						    	result.write('================================================================================\n\n')
-
 						    	for line in b_lines:
-						    		try:
-						    			stringTest = ','.join(a_lines)
-						    			itemTag = line.split('"')
-						    			if len(itemTag) > 2:
-						    				if not re.search('\\b'+itemTag[1]+'\\b', stringTest, flags = re.IGNORECASE):
-						    					result.write(line + '\n')
-						    		except IndexError:
-						    			continue
-
-						    		#if isMissing:
-						    		#	print(line)
-						    		#	result.write(line + '\n')
-						    			
+						    		if line not in a_lines:
+						    			result.write(line + '\n')
 						    else:
 						    	result.write('Result of ' + file2 + ' compared to ' + file1 + '\n')
 						    	result.write('================================================================================\n\n')
-
 						    	for line in a_lines:
-						    		isMissing = True
-
-						    		for line1 in b_lines:
-						    			try:
-						    				if line.split('"')[1].lower() == line1.split('"')[1].lower():
-						    					isMissing = False
-						    			except:
-						    				continue
-
-						    		if isMissing:
-						    			print(line)
+						    		if line not in b_lines:
 						    			result.write(line + '\n')
-						    			
 						    result.close()
 						    f_a.close()
 						    f_b.close()
 						    i+=1
-						except Exception as e:
+						except:
 							success = False
 							self.messageEntry.config(fg = 'red')
 							self.messageText.set('Incorrect encoding type.')
 			if success:
 				self.messageEntry.config(fg = 'green')
 				self.messageText.set('Result has been saved in comparison_result folder (same directory with this tool).')
-				print('It took {0:0.1f} seconds'.format(time.time() - startTime))
 
 	def compare_button_click(self):
 		self.compare_files_thread = threading.Thread(target = self.compare_files)
