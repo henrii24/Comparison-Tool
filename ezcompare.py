@@ -32,7 +32,7 @@ class ezcompare(tk.Tk):
 			self.destroy()
 	
 	def initComponent(self):
-		#---------------------------
+		#---------------------------d
 		# Main frames
 		#---------------------------
 		self.topFrame = tk.Frame(self)
@@ -135,6 +135,7 @@ class ezcompare(tk.Tk):
 
 	def compare_files(self):
 		success = True
+		noEncode = False
 
 		check1, txt_files_first = self.check_directory(self.dir1PathEntry)
 		check2, txt_files_second = self.check_directory(self.dir2PathEntry)
@@ -148,47 +149,71 @@ class ezcompare(tk.Tk):
 					if self.do_stop:
 						break
 					if self.encodingType.get() == '':
-						with open(file1) as f_a, open(file2) as f_b:
-							try:
-								a_lines = set(f_a.read().splitlines())
-								b_lines = set(f_b.read().splitlines())
-							except:
-								success = False
-								self.messageEntry.config(fg = 'red')
-								self.messageText.set('Incorrect encoding type.')
+						f_a = open(file1)
+						f_b = open(file2)
 					else:
-						with open(file1, encoding = self.encodingType.get()) as f_a, open(file2, encoding = self.encodingType.get()) as f_b:
-							try:
-							    a_lines = set(f_a.read().splitlines())
-							    b_lines = set(f_b.read().splitlines())
-							    subdirectory = 'comparison_result'
-							    try:
-							    	os.mkdir(subdirectory)
-							    except Exception:
-							    	pass
-							    result = open(os.path.join(subdirectory, 'result' + str(i) + '.txt'), 'w', encoding = self.encodingType.get())
-							    self.messageEntry.config(fg = 'green')
-							    self.messageText.set('Comparing pair ' + str(i) + '...')
-							    if self.optionChoice.get() == 1:
-							    	result.write('Result of ' + file1 + ' compared to ' + file2 + '\n')
-							    	result.write('================================================================================\n\n')
-							    	for line in b_lines:
-							    		if line not in a_lines:
-							    			result.write(line + '\n')
-							    else:
-							    	result.write('Result of ' + file2 + ' compared to ' + file1 + '\n')
-							    	result.write('================================================================================\n\n')
-							    	for line in a_lines:
-							    		if line not in b_lines:
-							    			result.write(line + '\n')
-							    result.close()
-							    f_a.close()
-							    f_b.close()
-							    i+=1
-							except:
-								success = False
-								self.messageText.set('Incorrect encoding type.')
+						f_a = open(file1, encoding = self.encodingType.get())
+						f_b = open(file2, encoding = self.encodingType.get())
+						try:
+						    a_lines = list(f_a.read().splitlines())
+						    b_lines = list(f_b.read().splitlines())
+						    subdirectory = 'comparison_result'
+						    try:
+						    	os.mkdir(subdirectory)
+						    except Exception:
+						    	pass
+
+						    result = open(os.path.join(subdirectory, 'result' + str(i) + '.txt'), 'w', encoding = self.encodingType.get())
+						    self.messageEntry.config(fg = 'green')
+						    self.messageText.set('Comparing pair ' + str(i) + '...')
+
+						    if self.optionChoice.get() == 1:
+						    	result.write('Result of ' + file1 + ' compared to ' + file2 + '\n')
+						    	result.write('================================================================================\n\n')
+
+						    	for line in b_lines:
+						    		isMissing = True
+
+						    		for line1 in a_lines:
+						    			try:
+						    				if line.split('"')[1].lower() == line1.split('"')[1].lower():
+						    					isMissing = False
+						    			except:
+						    				continue
+
+						    		if isMissing:
+						    			print(line)
+						    			result.write(line + '\n')
+						    			
+						    else:
+						    	result.write('Result of ' + file2 + ' compared to ' + file1 + '\n')
+						    	result.write('================================================================================\n\n')
+
+						    	for line in a_lines:
+						    		isMissing = True
+
+						    		for line1 in b_lines:
+						    			try:
+						    				if line.split('"')[1].lower() == line1.split('"')[1].lower():
+						    					isMissing = False
+						    			except:
+						    				continue
+
+						    		if isMissing:
+						    			print(line)
+						    			result.write(line + '\n')
+						    			
+						    result.close()
+						    f_a.close()
+						    f_b.close()
+						    i+=1
+						except Exception as e:
+							print(str(e))
+							success = False
+							self.messageEntry.config(fg = 'red')
+							self.messageText.set('Incorrect encoding type.')
 			if success:
+				self.messageEntry.config(fg = 'green')
 				self.messageText.set('Result has been saved in comparison_result folder (same directory with this tool).')
 
 	def compare_button_click(self):
